@@ -12,9 +12,8 @@ Use the bundled scripts to normalize Health Auto Export data into compact daily 
 - Health JSON source: `$HOME/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/health`
 - Workout JSON source: `$HOME/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/workout`
 - AutoSync fallback: `$HOME/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/AutoSync`
-- Obsidian vault: `$HOME/opt/TIL`
-- Output folder: `$HOME/opt/TIL/life/body`
-- Local aggregate cache: `$HOME/opt/TIL/life/body/.apple-health-cache/daily-facts.json`
+- Output folder: prefer explicit `--output-dir /path/to/vault/life/body`; otherwise infer from a detectable local Obsidian vault.
+- Local aggregate cache: defaults to `<output-dir>/.apple-health-cache/daily-facts.json`; override with `--cache-file`.
 - LaunchAgent label: `com.fulln.apple-health-obsidian`
 
 ## Generate A Report
@@ -22,10 +21,10 @@ Use the bundled scripts to normalize Health Auto Export data into compact daily 
 Run:
 
 ```bash
-/usr/bin/python3 scripts/health_obsidian_report.py
+/usr/bin/python3 scripts/health_obsidian_report.py --output-dir /path/to/vault/life/body
 ```
 
-By default this analyzes yesterday, updates the compact aggregate cache for the previous 7 days, and writes `健康日报-YYYY-MM-DD.md` under `life/body/`. It does not archive or copy raw JSON.
+By default this analyzes yesterday, updates the compact aggregate cache for the previous 7 days, and writes `健康日报-YYYY-MM-DD.md` under the selected output folder. It does not archive or copy raw JSON.
 
 Useful options:
 

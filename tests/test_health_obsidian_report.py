@@ -169,6 +169,11 @@ class HealthObsidianReportTest(unittest.TestCase):
         self.assertIn("## 建议\n\n- a1\n- a2\n- a3", formatted)
         self.assertNotIn("ignored", formatted)
 
+    def test_infer_output_dir_uses_explicit_path(self):
+        explicit = Path("/tmp/custom-vault/life/body")
+
+        self.assertEqual(report.infer_output_dir(explicit), explicit)
+
 
 if __name__ == "__main__":
     unittest.main()

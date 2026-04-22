@@ -24,8 +24,8 @@ All defaults are based on the current macOS user:
 | Health JSON | `$HOME/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/health` |
 | Workout JSON | `$HOME/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/workout` |
 | AutoSync fallback | `$HOME/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/AutoSync` |
-| Obsidian output | `$HOME/opt/TIL/life/body` |
-| Local aggregate cache | `$HOME/opt/TIL/life/body/.apple-health-cache/daily-facts.json` |
+| Obsidian output | Pass `--output-dir /path/to/vault/life/body`; the script only falls back to an inferred vault when it can find one. |
+| Local aggregate cache | Defaults to `<output-dir>/.apple-health-cache/daily-facts.json`; override with `--cache-file`. |
 | launchd logs | `$HOME/Library/Logs/apple-health-obsidian` |
 
 ## Usage
@@ -33,7 +33,8 @@ All defaults are based on the current macOS user:
 Generate yesterday's report:
 
 ```bash
-/usr/bin/python3 scripts/health_obsidian_report.py
+/usr/bin/python3 scripts/health_obsidian_report.py \
+  --output-dir "$HOME/path/to/vault/life/body"
 ```
 
 Generate a specific date:
@@ -56,6 +57,8 @@ Use custom folders:
   --workout-dir "$HOME/path/to/workout" \
   --output-dir "$HOME/path/to/vault/life/body"
 ```
+
+If `--output-dir` is omitted, the script tries to infer a local Obsidian vault from common locations such as `$HOME/opt/TIL`. If no vault is found, it exits with a message instead of writing to a guessed folder.
 
 ## AI
 

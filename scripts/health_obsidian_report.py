@@ -24,7 +24,6 @@ DEFAULT_WORKOUT_DIR = DOCUMENTS_DIR / "workout"
 AUTOSYNC_HEALTH_DIR = AUTOSYNC_DIR / "HealthMetrics"
 AUTOSYNC_WORKOUT_DIR = AUTOSYNC_DIR / "Workouts"
 LEGACY_HEALTH_DIR = DOCUMENTS_DIR / "New Automation"
-DEFAULT_OUTPUT_DIR = HOME / "opt/TIL/life/body"
 DEFAULT_CACHE_NAME = ".apple-health-cache/daily-facts.json"
 DEFAULT_AI_TIMEOUT = 180
 COMPRESSION_TOOL = "/usr/bin/compression_tool"
@@ -98,7 +97,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--health-dir", type=Path, default=None)
     parser.add_argument("--workout-dir", type=Path, default=None)
     parser.add_argument("--source-dir", type=Path, help="Backward-compatible alias for --health-dir.")
-    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--cache-file", type=Path)
     parser.add_argument("--date", help="Report date in YYYY-MM-DD. Defaults to yesterday.")
     parser.add_argument("--lookback-days", type=int, default=7)
@@ -138,6 +137,25 @@ def resolve_workout_dir(args: argparse.Namespace) -> Path:
     if DEFAULT_WORKOUT_DIR.exists():
         return DEFAULT_WORKOUT_DIR
     return AUTOSYNC_WORKOUT_DIR
+
+
+def infer_output_dir(explicit: Path | None) -> Path:
+    if explicit:
+        return explicit
+    candidates = [
+        HOME / "opt/TIL/life/body",
+        HOME / "Documents/Obsidian/life/body",
+        HOME / "Library/Mobile Documents/iCloud~md~obsidian/Documents/life/body",
+    ]
+    for candidate in candidates:
+        if candidate.exists() and (candidate.parents[1] / ".obsidian").exists():
+            return candidate
+    for vault in [HOME / "opt/TIL", HOME / "opt/obsidian"]:
+        if (vault / ".obsidian").exists():
+            return vault / "life/body"
+    raise SystemExit(
+        "Could not infer Obsidian output folder. Pass --output-dir /path/to/vault/life/body."
+    )
 
 
 def as_float(value: Any) -> float | None:
@@ -920,9 +938,10 @@ def main() -> int:
     date = report_date(args.date)
     health_dir = resolve_health_dir(args)
     workout_dir = resolve_workout_dir(args)
+    output_dir = infer_output_dir(args.output_dir)
     dates = date_range(date, args.lookback_days)
-    note_path = args.output_dir / f"健康日报-{date.isoformat()}.md"
-    local_cache = cache_path(args.output_dir, args.cache_file)
+    note_path = output_dir / f"健康日报-{date.isoformat()}.md"
+    local_cache = cache_path(output_dir, args.cache_file)
 
     if not health_dir.exists():
         print(f"Missing health JSON directory: {health_dir}", file=sys.stderr)
@@ -954,7 +973,7 @@ def main() -> int:
         print(markdown)
         return 0
 
-    args.output_dir.mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
     note_path.write_text(markdown, encoding="utf-8")
     print(f"Updated cache {local_cache}")
     print(f"Wrote {note_path}")
