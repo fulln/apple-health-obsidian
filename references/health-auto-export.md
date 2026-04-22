@@ -1,6 +1,6 @@
 # Health Auto Export JSON Notes
 
-The observed JSON shape is:
+The daily health JSON shape is:
 
 ```json
 {
@@ -30,3 +30,27 @@ Unit handling:
 - `walking_running_distance` is exported in kilometers in the observed files.
 
 The report should not pass full raw health samples to AI unless needed. Prefer deterministic aggregation first, then send compact facts to the model.
+
+Workout JSON can be shaped as:
+
+```json
+{
+  "data": {
+    "workouts": [
+      {
+        "name": "Pool Swim",
+        "duration": 2537.31,
+        "activeEnergyBurned": {"qty": 1600.78, "units": "kJ"},
+        "distance": {"qty": 1, "units": "km"}
+      }
+    ]
+  }
+}
+```
+
+Normalize workout records before AI:
+
+- Convert `duration` seconds to minutes when the value is larger than 240.
+- Prefer `activeEnergyBurned.qty` as kJ and convert to kcal with `kJ / 4.184`.
+- Include workout name, duration, active calories, distance, average heart rate, and max heart rate.
+- Do not pass raw per-minute heart-rate or energy arrays to AI.

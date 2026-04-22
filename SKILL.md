@@ -1,18 +1,20 @@
 ---
 name: apple-health-obsidian
-description: Generate daily Apple Health and activity summaries from Health Auto Export JSON files into an Obsidian vault. Use when Codex needs to sync `/Users/fulln/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/data` JSON exports, analyze yesterday's Apple Health, exercise, sleep, heart, energy, walking, and body metrics with AI, create Markdown notes under `life/body/`, or install/update the local launchd schedule for this workflow.
+description: Generate daily Apple Health and workout summaries from Health Auto Export JSON or AutoSync files into an Obsidian vault. Use when Codex needs to read `/Users/fulln/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/health`, `/workout`, or AutoSync HealthMetrics/Workouts, normalize health and workout data into compact local aggregates, analyze yesterday plus the previous 7 days with AI, create Markdown notes under `life/body/`, or install/update the local launchd schedule.
 ---
 
 # Apple Health Obsidian
 
-Use the bundled scripts to turn Health Auto Export JSON files into daily Obsidian notes.
+Use the bundled scripts to normalize Health Auto Export data into compact daily facts, then write AI-assisted Obsidian notes.
 
 ## Default Paths
 
-- Health source: `/Users/fulln/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/data`
+- Health JSON source: `/Users/fulln/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/health`
+- Workout JSON source: `/Users/fulln/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/workout`
+- AutoSync fallback: `/Users/fulln/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/AutoSync`
 - Obsidian vault: `/Users/fulln/opt/TIL`
 - Output folder: `/Users/fulln/opt/TIL/life/body`
-- JSON archive: `/Users/fulln/opt/TIL/life/body/health-json`
+- Local aggregate cache: `/Users/fulln/opt/TIL/life/body/.apple-health-cache/daily-facts.json`
 - LaunchAgent label: `com.fulln.apple-health-obsidian`
 
 ## Generate A Report
@@ -23,7 +25,7 @@ Run:
 /usr/bin/python3 scripts/health_obsidian_report.py
 ```
 
-By default this analyzes yesterday, syncs all matching `HealthAutoExport-*.json` files into the archive, and writes `健康日报-YYYY-MM-DD.md` under `life/body/`.
+By default this analyzes yesterday, updates the compact aggregate cache for the previous 7 days, and writes `健康日报-YYYY-MM-DD.md` under `life/body/`. It does not archive or copy raw JSON.
 
 Useful options:
 
@@ -31,12 +33,13 @@ Useful options:
 /usr/bin/python3 scripts/health_obsidian_report.py --date 2026-04-21
 /usr/bin/python3 scripts/health_obsidian_report.py --no-ai
 /usr/bin/python3 scripts/health_obsidian_report.py --dry-run
+/usr/bin/python3 scripts/health_obsidian_report.py --health-dir /path/to/health --workout-dir /path/to/workout
 /usr/bin/python3 scripts/health_obsidian_report.py --output-dir /path/to/vault/life/body
 ```
 
 ## AI Summary
 
-The report script first computes deterministic facts from JSON, then asks AI to write the Chinese narrative summary.
+The report script first computes deterministic facts from health/workout JSON or AutoSync data, writes only normalized aggregates to the local cache, then asks AI to write the Chinese narrative summary.
 
 Default AI command:
 
