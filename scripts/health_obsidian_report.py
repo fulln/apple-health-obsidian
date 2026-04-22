@@ -16,16 +16,15 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-DOCUMENTS_DIR = Path(
-    "/Users/fulln/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents"
-)
+HOME = Path.home()
+DOCUMENTS_DIR = HOME / "Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents"
 AUTOSYNC_DIR = DOCUMENTS_DIR / "AutoSync"
 DEFAULT_HEALTH_DIR = DOCUMENTS_DIR / "health"
 DEFAULT_WORKOUT_DIR = DOCUMENTS_DIR / "workout"
 AUTOSYNC_HEALTH_DIR = AUTOSYNC_DIR / "HealthMetrics"
 AUTOSYNC_WORKOUT_DIR = AUTOSYNC_DIR / "Workouts"
 LEGACY_HEALTH_DIR = DOCUMENTS_DIR / "New Automation"
-DEFAULT_OUTPUT_DIR = Path("/Users/fulln/opt/TIL/life/body")
+DEFAULT_OUTPUT_DIR = HOME / "opt/TIL/life/body"
 DEFAULT_CACHE_NAME = ".apple-health-cache/daily-facts.json"
 DEFAULT_AI_TIMEOUT = 180
 COMPRESSION_TOOL = "/usr/bin/compression_tool"

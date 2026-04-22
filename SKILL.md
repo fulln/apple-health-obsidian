@@ -1,6 +1,6 @@
 ---
 name: apple-health-obsidian
-description: Generate daily Apple Health and workout summaries from Health Auto Export JSON or AutoSync files into an Obsidian vault. Use when Codex needs to read `/Users/fulln/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/health`, `/workout`, or AutoSync HealthMetrics/Workouts, normalize health and workout data into compact local aggregates, analyze yesterday plus the previous 7 days with AI, create Markdown notes under `life/body/`, or install/update the local launchd schedule.
+description: Generate daily Apple Health and workout summaries from Health Auto Export JSON or AutoSync files into an Obsidian vault. Use when Codex needs to read `$HOME/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/health`, `/workout`, or AutoSync HealthMetrics/Workouts, normalize health and workout data into compact local aggregates, analyze yesterday plus the previous 7 days with AI, create Markdown notes under `life/body/`, or install/update the local launchd schedule.
 ---
 
 # Apple Health Obsidian
@@ -9,12 +9,12 @@ Use the bundled scripts to normalize Health Auto Export data into compact daily 
 
 ## Default Paths
 
-- Health JSON source: `/Users/fulln/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/health`
-- Workout JSON source: `/Users/fulln/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/workout`
-- AutoSync fallback: `/Users/fulln/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/AutoSync`
-- Obsidian vault: `/Users/fulln/opt/TIL`
-- Output folder: `/Users/fulln/opt/TIL/life/body`
-- Local aggregate cache: `/Users/fulln/opt/TIL/life/body/.apple-health-cache/daily-facts.json`
+- Health JSON source: `$HOME/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/health`
+- Workout JSON source: `$HOME/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/workout`
+- AutoSync fallback: `$HOME/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/AutoSync`
+- Obsidian vault: `$HOME/opt/TIL`
+- Output folder: `$HOME/opt/TIL/life/body`
+- Local aggregate cache: `$HOME/opt/TIL/life/body/.apple-health-cache/daily-facts.json`
 - LaunchAgent label: `com.fulln.apple-health-obsidian`
 
 ## Generate A Report
@@ -39,7 +39,7 @@ Useful options:
 
 ## AI Summary
 
-The report script first computes deterministic facts from health/workout JSON or AutoSync data, writes only normalized aggregates to the local cache, then asks AI to write the Chinese narrative summary.
+The report script first computes deterministic facts from health/workout JSON or AutoSync data, writes only normalized aggregates to the local cache, then asks AI to write the Chinese summary and recommendations.
 
 Default AI command:
 
@@ -70,8 +70,6 @@ The default schedule runs daily at 08:10 local time. Change it with:
 ```
 
 Logs go to `~/Library/Logs/apple-health-obsidian/`.
-
-The installer defaults the scheduled job to `/usr/local/bin/python3` when it exists. On this Mac, `/usr/bin/python3` was blocked from reading the iCloud `Mobile Documents` export path under launchd.
 
 ## Metric Notes
 
