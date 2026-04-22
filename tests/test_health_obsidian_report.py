@@ -135,18 +135,39 @@ class HealthObsidianReportTest(unittest.TestCase):
         self.assertEqual(report.normalize_analysis(text), "## 今日结论\n- ok")
 
     def test_render_markdown_omits_metric_detail_section(self):
+        facts = {
+            "date": "2026-04-21",
+            "metrics_count": 1,
+            "metrics": {"step_count": {"name": "step_count", "total": 123, "units": "count", "records": 2}},
+            "workouts": {"count": 0, "duration_min": 0, "active_energy_kcal": 0, "items": []},
+        }
+        trends = {"period": "2026-04-15..2026-04-21", "metrics": [], "workout_days": 0, "workout_count": 0, "workout_duration_min": 0}
         markdown = report.render_markdown(
             dt.date(2026, 4, 21),
             Path("/health"),
             Path("/workout"),
             Path("/cache.json"),
             "raw metric facts",
-            "## 结论\n- ok",
+            "## 总结\n- ok\n\n## 建议\n- move",
+            facts,
+            trends,
             None,
         )
 
         self.assertNotIn("## 指标明细", markdown)
         self.assertNotIn("raw metric facts", markdown)
+        self.assertLess(markdown.index("## 总结"), markdown.index("## 建议"))
+        self.assertLess(markdown.index("## 建议"), markdown.index("## 数据概览"))
+        self.assertIn("| 指标 | 数值 |", markdown)
+
+    def test_format_ai_frontmatter_uses_explicit_sections(self):
+        formatted = report.format_ai_frontmatter(
+            "## 总结\n- s1\n- s2\n\n## 建议\n- a1\n- a2\n- a3\n\n## 其他\n- ignored"
+        )
+
+        self.assertIn("## 总结\n\n- s1\n- s2", formatted)
+        self.assertIn("## 建议\n\n- a1\n- a2\n- a3", formatted)
+        self.assertNotIn("ignored", formatted)
 
 
 if __name__ == "__main__":

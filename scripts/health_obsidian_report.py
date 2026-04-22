@@ -557,6 +557,21 @@ def format_number(value: Any) -> str:
     return str(value)
 
 
+def display_value(value: Any, unit: str = "") -> str:
+    if value is None:
+        return "-"
+    text = format_number(value)
+    return f"{text} {unit}".strip()
+
+
+def metric_value(metrics: dict[str, dict[str, Any]], name: str, *fields: str) -> Any:
+    metric = metrics.get(name, {})
+    for field in fields:
+        if field in metric:
+            return metric[field]
+    return None
+
+
 def metric_line(summary: dict[str, Any]) -> str:
     name = summary["name"]
     units = summary.get("units", "")
@@ -569,6 +584,120 @@ def metric_line(summary: dict[str, Any]) -> str:
         if key in summary:
             parts.append(f"{key}={format_number(summary[key])}hr")
     return f"- {name}: " + ", ".join(parts)
+
+
+def markdown_table(headers: list[str], rows: list[list[Any]]) -> str:
+    lines = [
+        "| " + " | ".join(headers) + " |",
+        "| " + " | ".join(["---"] * len(headers)) + " |",
+    ]
+    for row in rows:
+        lines.append("| " + " | ".join(str(cell) if cell is not None else "-" for cell in row) + " |")
+    return "\n".join(lines)
+
+
+def daily_overview_table(facts: dict[str, Any]) -> str:
+    metrics = facts["metrics"]
+    rows = [
+        ["步数", display_value(metric_value(metrics, "step_count", "total"), "步")],
+        ["步行/跑步距离", display_value(metric_value(metrics, "walking_running_distance", "total"), "km")],
+        ["锻炼时间", display_value(metric_value(metrics, "apple_exercise_time", "total"), "min")],
+        ["站立小时", display_value(metric_value(metrics, "apple_stand_hour", "total"), "h")],
+        ["活动能量", display_value(metric_value(metrics, "active_energy", "kcal"), "kcal")],
+        ["睡眠", display_value(metric_value(metrics, "sleep_analysis", "totalSleep"), "hr")],
+        ["静息心率", display_value(metric_value(metrics, "resting_heart_rate", "avg", "latest"), "bpm")],
+        ["HRV", display_value(metric_value(metrics, "heart_rate_variability", "avg"), "ms")],
+        ["体重", display_value(metric_value(metrics, "weight_body_mass", "latest"), "kg")],
+        ["体脂率", display_value(metric_value(metrics, "body_fat_percentage", "latest"), "%")],
+    ]
+    return markdown_table(["指标", "数值"], rows)
+
+
+def workout_table(facts: dict[str, Any]) -> str:
+    workouts = facts.get("workouts", {})
+    items = workouts.get("items", [])
+    if not items:
+        return "无运动记录。"
+    rows = []
+    for item in items:
+        rows.append([
+            item.get("name", "-"),
+            display_value(item.get("duration_min"), "min"),
+            display_value(item.get("active_energy_kcal"), "kcal"),
+            display_value(item.get("distance"), "km"),
+            display_value(item.get("avg_heart_rate"), "bpm"),
+            display_value(item.get("max_heart_rate"), "bpm"),
+        ])
+    rows.append([
+        "合计",
+        display_value(workouts.get("duration_min"), "min"),
+        display_value(workouts.get("active_energy_kcal"), "kcal"),
+        "-",
+        "-",
+        "-",
+    ])
+    return markdown_table(["运动", "时长", "活动能量", "距离", "平均心率", "最高心率"], rows)
+
+
+def trend_label(metric: str, field: str) -> str:
+    labels = {
+        ("step_count", "total"): "步数",
+        ("walking_running_distance", "total"): "步行/跑步距离",
+        ("apple_exercise_time", "total"): "锻炼时间",
+        ("active_energy", "kcal"): "活动能量",
+        ("sleep_analysis", "totalSleep"): "睡眠",
+        ("resting_heart_rate", "avg"): "静息心率",
+        ("heart_rate_variability", "avg"): "HRV",
+        ("weight_body_mass", "latest"): "体重",
+        ("body_fat_percentage", "latest"): "体脂率",
+    }
+    return labels.get((metric, field), f"{metric}.{field}")
+
+
+def trend_unit(metric: str, field: str) -> str:
+    units = {
+        ("step_count", "total"): "步",
+        ("walking_running_distance", "total"): "km",
+        ("apple_exercise_time", "total"): "min",
+        ("active_energy", "kcal"): "kcal",
+        ("sleep_analysis", "totalSleep"): "hr",
+        ("resting_heart_rate", "avg"): "bpm",
+        ("heart_rate_variability", "avg"): "ms",
+        ("weight_body_mass", "latest"): "kg",
+        ("body_fat_percentage", "latest"): "%",
+    }
+    return units.get((metric, field), "")
+
+
+def trend_table(trends: dict[str, Any]) -> str:
+    rows = []
+    for trend in trends.get("metrics", []):
+        unit = trend_unit(trend["metric"], trend["field"])
+        rows.append([
+            trend_label(trend["metric"], trend["field"]),
+            trend["days"],
+            display_value(trend["avg"], unit),
+            display_value(trend["latest"], unit),
+            display_value(trend["delta_latest_vs_avg"], unit),
+            f"{display_value(trend['min'], unit)} - {display_value(trend['max'], unit)}",
+        ])
+    rows.append([
+        "运动",
+        "-",
+        f"{trends.get('workout_days', 0)} 天 / {trends.get('workout_count', 0)} 次",
+        display_value(trends.get("workout_duration_min"), "min"),
+        "-",
+        trends.get("period", "-"),
+    ])
+    return markdown_table(["趋势", "天数", "均值", "最新", "较均值", "范围/周期"], rows)
+
+
+def deterministic_sections(facts: dict[str, Any], trends: dict[str, Any]) -> str:
+    return "\n\n".join([
+        "## 数据概览\n\n" + daily_overview_table(facts),
+        "## 运动表格\n\n" + workout_table(facts),
+        "## 近 7 天趋势\n\n" + trend_table(trends),
+    ])
 
 
 def compact_facts_markdown(facts: dict[str, Any], trends: dict[str, Any]) -> str:
@@ -623,19 +752,18 @@ def fallback_analysis(facts: dict[str, Any], trends: dict[str, Any]) -> str:
         ("HRV", get("heart_rate_variability", "avg"), "ms"),
         ("当日运动", facts.get("workouts", {}).get("count"), "次"),
     ]
-    lines = ["## AI 总结", "", "AI 未运行或未成功返回，以下是自动指标摘要：", ""]
+    summary_lines = ["## 总结", "", "- AI 未运行或未成功返回，以下是自动指标摘要："]
     for label, value, unit in rows:
         if value is not None:
-            lines.append(f"- {label}: {format_number(value)} {unit}")
-    lines.extend([
+            summary_lines.append(f"- {label}: {format_number(value)} {unit}")
+    advice_lines = [
+        "## 建议",
         "",
-        "## 近 7 天初步判断",
-        "",
-        f"- 近 7 天运动天数: {trends.get('workout_days', 0)} 天，运动次数: {trends.get('workout_count', 0)} 次。",
         "- 优先结合近 7 天睡眠、HRV、活动量判断恢复，而不是只看单日。",
         "- 若运动量增加但睡眠或 HRV 走低，第二天应降低强度。",
-    ])
-    return "\n".join(lines)
+        "- 保持固定称重和睡眠记录，用 7 天均值而不是单日波动做判断。",
+    ]
+    return "\n\n".join(["\n".join(summary_lines), "\n".join(advice_lines)])
 
 
 def normalize_analysis(text: str) -> str:
@@ -649,6 +777,64 @@ def normalize_analysis(text: str) -> str:
     return "\n".join(lines).strip()
 
 
+def first_bullets(markdown: str, limit: int) -> list[str]:
+    bullets: list[str] = []
+    for line in markdown.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("- "):
+            bullets.append(stripped)
+            if len(bullets) >= limit:
+                break
+    return bullets
+
+
+def section_lines(markdown: str, heading: str) -> list[str]:
+    lines = markdown.splitlines()
+    capture = False
+    result: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("## "):
+            if capture:
+                break
+            capture = stripped == heading
+            continue
+        if capture:
+            result.append(line)
+    return result
+
+
+def section_bullets(markdown: str, heading: str, limit: int) -> list[str]:
+    bullets = []
+    for line in section_lines(markdown, heading):
+        stripped = line.strip()
+        if stripped.startswith("- "):
+            bullets.append(stripped)
+            if len(bullets) >= limit:
+                break
+    return bullets
+
+
+def format_ai_frontmatter(analysis: str) -> str:
+    normalized = normalize_analysis(analysis)
+    summary = section_bullets(normalized, "## 总结", 5)
+    suggestions = section_bullets(normalized, "## 建议", 3)
+    if not summary:
+        bullets = first_bullets(normalized, 8)
+        summary = bullets[:5]
+        if not suggestions:
+            suggestions = bullets[5:8]
+    if not summary:
+        summary = [line for line in normalized.splitlines() if line.strip() and not line.startswith("#")][:5]
+        summary = [f"- {line.strip()}" for line in summary]
+    if not suggestions:
+        suggestions = ["- 根据数据概览和近 7 天趋势安排今天的活动强度。"]
+    return "\n\n".join([
+        "## 总结\n\n" + "\n".join(summary),
+        "## 建议\n\n" + "\n".join(suggestions[:3]),
+    ])
+
+
 def ai_prompt(facts_md: str) -> str:
     return f"""你是一个谨慎的 Apple 健康与运动数据分析助手。
 
@@ -657,11 +843,11 @@ def ai_prompt(facts_md: str) -> str:
 要求：
 - 不要假装知道未提供的数据。
 - 综合当日健康 JSON、当日运动 JSON、近 7 天趋势来判断，不要只看单日。
-- 先给 3-5 条结论，再分别分析活动、运动、睡眠/恢复、心肺、身体指标、近 7 天趋势。
-- 给出今天可执行的 3 条建议，建议要具体、保守、可执行。
+- 只输出两段：`## 总结` 和 `## 建议`。
+- `## 总结` 下输出 3-5 条 bullet。
+- `## 建议` 下输出 3 条 bullet，建议要具体、保守、可执行。
 - 如果数据缺失，明确写出缺失项。
 - 不做医疗诊断；涉及异常时建议持续观察或咨询专业人士。
-- 不要输出一级标题，直接从二级标题开始。
 - 直接输出 Markdown 正文，不要包裹代码块。
 
 数据：
@@ -699,6 +885,8 @@ def render_markdown(
     cache_file: Path,
     facts_md: str,
     analysis: str,
+    facts: dict[str, Any],
+    trends: dict[str, Any],
     ai_error: str | None,
 ) -> str:
     title = f"健康日报 {date.isoformat()}"
@@ -714,7 +902,7 @@ def render_markdown(
         f"# {title}",
         "",
     ]
-    body = [normalize_analysis(analysis), ""]
+    body = [format_ai_frontmatter(analysis), "", deterministic_sections(facts, trends), ""]
     body.extend([
         "## 同步信息",
         "",
@@ -759,7 +947,7 @@ def main() -> int:
     if not analysis:
         analysis = fallback_analysis(facts, trends)
 
-    markdown = render_markdown(date, health_dir, workout_dir, local_cache, facts_md, analysis, ai_error)
+    markdown = render_markdown(date, health_dir, workout_dir, local_cache, facts_md, analysis, facts, trends, ai_error)
 
     if args.dry_run:
         print(f"Would update cache {local_cache}")
