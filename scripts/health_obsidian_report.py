@@ -714,7 +714,7 @@ def render_markdown(
         f"# {title}",
         "",
     ]
-    body = [normalize_analysis(analysis), "", "## 指标明细", "", facts_md, ""]
+    body = [normalize_analysis(analysis), ""]
     body.extend([
         "## 同步信息",
         "",

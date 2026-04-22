@@ -127,13 +127,26 @@ class HealthObsidianReportTest(unittest.TestCase):
                 report.read_hae = old_read_hae
                 sys.argv = old_argv
 
-            self.assertIn("step_count", buffer.getvalue())
-            self.assertIn("total=123count", buffer.getvalue())
+            self.assertIn("步数: 123 步", buffer.getvalue())
 
     def test_normalize_analysis_strips_ai_h1(self):
         text = "# Apple 健康日报｜2026-04-21\n\n## 今日结论\n- ok"
 
         self.assertEqual(report.normalize_analysis(text), "## 今日结论\n- ok")
+
+    def test_render_markdown_omits_metric_detail_section(self):
+        markdown = report.render_markdown(
+            dt.date(2026, 4, 21),
+            Path("/health"),
+            Path("/workout"),
+            Path("/cache.json"),
+            "raw metric facts",
+            "## 结论\n- ok",
+            None,
+        )
+
+        self.assertNotIn("## 指标明细", markdown)
+        self.assertNotIn("raw metric facts", markdown)
 
 
 if __name__ == "__main__":
