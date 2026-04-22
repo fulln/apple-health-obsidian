@@ -1,0 +1,4 @@
+interface:
+  display_name: "Apple Health Obsidian"
+  short_description: "Summarize Apple Health exports into Obsidian"
+  default_prompt: "Use $apple-health-obsidian to generate yesterday's Apple Health summary into Obsidian."
